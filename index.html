@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML 代码预览工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            flex-direction: column;
+        }
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
+        }
+        .editor-container, .preview-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        textarea {
+            flex: 1;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: monospace;
+            resize: none;
+        }
+        .preview-frame {
+            flex: 1;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: white;
+        }
+        h2 {
+            margin-top: 0;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .device-selector {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>HTML 代码预览工具</h1>
+    
+    <div class="controls">
+        <button id="runBtn">运行代码</button>
+        <button id="clearBtn">清空代码</button>
+        <div class="device-selector">
+            <label for="deviceType">设备预览:</label>
+            <select id="deviceType">
+                <option value="responsive">响应式</option>
+                <option value="mobile">手机 (375px)</option>
+                <option value="tablet">平板 (768px)</option>
+                <option value="desktop">桌面 (100%)</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="editor-container">
+            <h2>HTML 代码编辑器</h2>
+            <textarea id="htmlCode" placeholder="在此粘贴您的HTML代码..."></textarea>
+        </div>
+        
+        <div class="preview-container">
+            <h2>实时预览</h2>
+            <iframe id="previewFrame" class="preview-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const htmlCode = document.getElementById('htmlCode');
+            const previewFrame = document.getElementById('previewFrame');
+            const runBtn = document.getElementById('runBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const deviceType = document.getElementById('deviceType');
+            
+            // 从本地存储加载代码
+            if(localStorage.getItem('savedHtml')) {
+                htmlCode.value = localStorage.getItem('savedHtml');
+                updatePreview();
+            }
+            
+            // 运行代码按钮
+            runBtn.addEventListener('click', updatePreview);
+            
+            // 清空代码按钮
+            clearBtn.addEventListener('click', function() {
+                htmlCode.value = '';
+                localStorage.removeItem('savedHtml');
+                previewFrame.srcdoc = '';
+            });
+            
+            // 设备类型选择
+            deviceType.addEventListener('change', function() {
+                updateFrameSize();
+                updatePreview();
+            });
+            
+            // 自动保存代码
+            htmlCode.addEventListener('input', function() {
+                localStorage.setItem('savedHtml', htmlCode.value);
+            });
+            
+            // 更新预览
+            function updatePreview() {
+                const code = htmlCode.value;
+                previewFrame.srcdoc = code;
+            }
+            
+            // 更新iframe尺寸
+            function updateFrameSize() {
+                const type = deviceType.value;
+                switch(type) {
+                    case 'mobile':
+                        previewFrame.style.width = '375px';
+                        previewFrame.style.margin = '0 auto';
+                        break;
+                    case 'tablet':
+                        previewFrame.style.width = '768px';
+                        previewFrame.style.margin = '0 auto';
+                        break;
+                    case 'desktop':
+                        previewFrame.style.width = '100%';
+                        previewFrame.style.margin = '0';
+                        break;
+                    default: // responsive
+                        previewFrame.style.width = '100%';
+                        previewFrame.style.margin = '0';
+                }
+            }
+            
+            // 初始化
+            updateFrameSize();
+        });
+    </script>
+</body>
+</html>
