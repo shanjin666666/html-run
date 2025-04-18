@@ -5,68 +5,158 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML 代码预览工具</title>
     <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+            --button-bg: #4CAF50;
+            --button-hover: #45a049;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1e1e1e;
+            --text-color: #ffffff;
+            --border-color: #444444;
+            --button-bg: #2d8630;
+            --button-hover: #246b27;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             margin: 0;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            min-height: 100vh;
             box-sizing: border-box;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
         }
+
         .container {
             display: flex;
             flex: 1;
             gap: 20px;
             flex-direction: column;
+            min-height: 0;
         }
+
         @media (min-width: 768px) {
             .container {
                 flex-direction: row;
             }
         }
+
         .editor-container, .preview-container {
             flex: 1;
             display: flex;
             flex-direction: column;
+            background: var(--bg-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 15px;
+            min-height: 400px;
+            overflow: hidden;
         }
-        textarea {
+
+        .editor-wrapper {
+            position: relative;
             flex: 1;
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-family: monospace;
-            resize: none;
+            min-height: 0;
+            overflow: hidden;
         }
+
+        textarea {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            padding: 10px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-y: auto;
+        }
+
+        .line-numbers {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 30px;
+            padding: 10px 5px;
+            text-align: right;
+            background-color: var(--bg-color);
+            border-right: 1px solid var(--border-color);
+            color: #888;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            user-select: none;
+            overflow: hidden;
+        }
+
         .preview-frame {
             flex: 1;
             width: 100%;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             background: white;
+            min-height: 0;
         }
-        h2 {
+
+        h1, h2 {
             margin-top: 0;
+            color: var(--text-color);
         }
+
         .controls {
             margin-bottom: 20px;
             display: flex;
-            gap: 10px;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
         }
+
         button {
             padding: 8px 16px;
-            background: #4CAF50;
+            background: var(--button-bg);
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
         }
+
         button:hover {
-            background: #45a049;
+            background: var(--button-hover);
+            transform: translateY(-1px);
         }
+
         .device-selector {
-            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .theme-toggle {
+            margin-left: auto;
         }
     </style>
 </head>
@@ -85,12 +175,16 @@
                 <option value="desktop">桌面 (100%)</option>
             </select>
         </div>
+        <button id="themeToggle" class="theme-toggle">切换暗黑模式</button>
     </div>
     
     <div class="container">
         <div class="editor-container">
             <h2>HTML 代码编辑器</h2>
-            <textarea id="htmlCode" placeholder="在此粘贴您的HTML代码..."></textarea>
+            <div class="editor-wrapper">
+                <div class="line-numbers"></div>
+                <textarea id="htmlCode" placeholder="在此粘贴您的HTML代码..."></textarea>
+            </div>
         </div>
         
         <div class="preview-container">
@@ -106,11 +200,37 @@
             const runBtn = document.getElementById('runBtn');
             const clearBtn = document.getElementById('clearBtn');
             const deviceType = document.getElementById('deviceType');
+            const themeToggle = document.getElementById('themeToggle');
+            const lineNumbers = document.querySelector('.line-numbers');
+            
+            // 主题切换
+            themeToggle.addEventListener('click', function() {
+                document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('theme', document.body.dataset.theme);
+            });
+
+            // 加载保存的主题
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.body.dataset.theme = savedTheme;
+            }
+            
+            // 更新行号
+            function updateLineNumbers() {
+                const lines = htmlCode.value.split('\n');
+                lineNumbers.innerHTML = lines.map((_, i) => i + 1).join('\n');
+            }
+            
+            htmlCode.addEventListener('input', updateLineNumbers);
+            htmlCode.addEventListener('scroll', () => {
+                lineNumbers.scrollTop = htmlCode.scrollTop;
+            });
             
             // 从本地存储加载代码
             if(localStorage.getItem('savedHtml')) {
                 htmlCode.value = localStorage.getItem('savedHtml');
                 updatePreview();
+                updateLineNumbers();
             }
             
             // 运行代码按钮
@@ -121,6 +241,7 @@
                 htmlCode.value = '';
                 localStorage.removeItem('savedHtml');
                 previewFrame.srcdoc = '';
+                updateLineNumbers();
             });
             
             // 设备类型选择
@@ -138,6 +259,7 @@
             function updatePreview() {
                 const code = htmlCode.value;
                 previewFrame.srcdoc = code;
+                updateLineNumbers();
             }
             
             // 更新iframe尺寸
